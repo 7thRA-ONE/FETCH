@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rating System</title>
+  <style>.container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  h1 {
+      text-align: center;
+  }
+
+  .rating {
+      text-align: center;
+  }
+
+  .rating input {
+      display: none;
+  }
+
+  .rating label {
+      font-size: 36px;
+      color: #ccc;
+      cursor: pointer;
+  }
+
+  .rating label:hover,
+  .rating input:checked ~ label {
+      color: #ffcc00;
+  }
+
+  .form-group {
+      margin-bottom: 20px;
+  }
+
+  label {
+      display: block;
+      margin-bottom: 5px;
+  }
+
+  input[type="text"],
+  input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+  }
+
+  button[type="submit"] {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+  }
+
+  button[type="submit"]:hover {
+      background-color: #0056b3;
+  } </style> 
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Rate Us!</h1>
+    <form id="ratingForm">
+        <div class="rating">
+            <input type="radio" id="star5" name="rating" value="5">
+            <label for="star5">5</label>
+            <input type="radio" id="star4" name="rating" value="4">
+            <label for="star4">4</label>
+            <input type="radio" id="star3" name="rating" value="3">
+            <label for="star3">3</label>
+            <input type="radio" id="star2" name="rating" value="2">
+            <label for="star2">2</label>
+            <input type="radio" id="star1" name="rating" value="1">
+            <label for="star1">1</label>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="ratingsList"></div>
+
+    <!-- New div to display current rating -->
+    <div id="currentRatingDisplay"></div>
+
+    <!-- New div to display average rating -->
+    <div id="averageRatingDisplay"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM content loaded");
+    const ratingForm = document.getElementById('ratingForm');
+    const ratingsList = document.getElementById('ratingsList');
+    const currentRatingDisplay = document.getElementById('currentRatingDisplay');
+    const averageRatingDisplay = document.getElementById('averageRatingDisplay');
+
+    // Function to update current rating display
+    function updateCurrentRatingDisplay(rating) {
+        console.log("Updating current rating display:", rating);
+        currentRatingDisplay.textContent = `Current Rating: ${rating}`;
+    }
+
+    // Function to update average rating display
+    function updateAverageRatingDisplay(averageRating) {
+        console.log("Updating average rating display:", averageRating);
+        averageRatingDisplay.textContent = `Average Rating: ${averageRating.toFixed(1)}`;
+    }
+
+    // Fetch and display ratings on page load
+    fetch('/api/ratings')
+    .then(response => {
+        console.log("Fetching ratings...");
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(ratings => {
+        console.log("Ratings fetched:", ratings);
+        // Display ratings on the website
+        ratingsList.innerHTML = '<h2>Ratings:</h2>';
+        ratings.forEach(rating => {
+            ratingsList.innerHTML += `<p>Name: ${rating.name}, Rating: ${rating.value}</p>`;
+        });
+
+        // Calculate and display average rating
+        const totalRatings = ratings.length;
+        if (totalRatings > 0) {
+            const totalSum = ratings.reduce((acc, cur) => acc + cur.value, 0);
+            const averageRating = totalSum / totalRatings;
+            updateAverageRatingDisplay(averageRating);
+        }
+    })
+    .catch(error => console.error('Error fetching ratings:', error));
+
+    // Update current rating display when user selects a rating
+    const ratingInputs = document.querySelectorAll('input[name="rating"]');
+    ratingInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            console.log("Rating selected:", this.value);
+            updateCurrentRatingDisplay(this.value);
+        });
+    });
+
+    // Submit rating
+    ratingForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const rating = document.querySelector('input[name="rating"]:checked');
+
+        if (!rating) {
+            console.error("No rating selected");
+            return;
+        }
+
+        console.log("Submitting rating...");
+        fetch('/api/rate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, value: rating.value }),
+        })
+        .then(response => {
+            console.log("Response received:", response);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            // Update ratings list
+            ratingsList.innerHTML += `<p>Name: ${name}, Rating: ${rating.value}</p>`;
+            // Calculate and update average rating
+            const newTotalRatings = totalRatings + 1;
+            const newTotalSum = totalSum + parseInt(rating.value);
+            const newAverageRating = newTotalSum / newTotalRatings;
+            updateAverageRatingDisplay(newAverageRating);
+            // Reset form
+            ratingForm.reset();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    });
+});
+</script>
+</body>
+</html>
