@@ -15,6 +15,6 @@
     "express": "^4.18.2",
     "logomaker": "^1.0.2",
     "mongoose": "^8.1.1",
-    "node-fetch": "^3.2.6"
+    "node-fetch": "^2.2.6"
   }
 }

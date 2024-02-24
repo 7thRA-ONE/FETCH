@@ -4,6 +4,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
  const maker = require("logomaker")
+const fetch = require('node-fetch'); // Don't forget to import 'node-fetch'
+const fs = require('fs');
 // Connect to MongoDB
 const options = {
   socketTimeoutMS: 30000,
@@ -120,6 +122,94 @@ app.get('/api/logo/phub', async (req, res) => {
   }
 });
 
+app.get('/api/logo/naruto', async (req, res) => {
+  const { text } = req.query;
+  try {
+    const response = await maker.textpro(
+      "https://textpro.me/create-naruto-logo-style-text-effect-online-1125.html",
+      [`${text}`]
+    );
+
+    let botName = `Zero-TWO`
+    const imageUrl = response.image;
+    const caption = `Made by ${botName}`;
+
+    return res.json({ image: imageUrl, caption: caption });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    return res.status(500).json({ error: "An error occurred while processing the request" });
+  }
+});
+
+app.get('/api/logo/devil', async (req, res) => {
+  const { text } = req.query;
+  try {
+    const response = await  maker.textpro(
+      "https://textpro.me/create-neon-devil-wings-text-effect-online-free-1014.html",
+      [`${text}`]
+    )
+
+    let botName = `Zero-TWO`
+    const imageUrl = response.image;
+    const caption = `Made by ${botName}`;
+
+    return res.json({ image: imageUrl, caption: caption });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    return res.status(500).json({ error: "An error occurred while processing the request" });
+  }
+});
+
+app.get('/api/logo/carbon', async (req, res) => {
+  const { text } = req.query;
+  try {
+    const response = await fetch('https://carbonara.solopov.dev/api/cook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code: text,
+        backgroundColor: '#1F816D',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate logo');
+    }
+
+    const imageData = await response.buffer(); // Get the response body as a buffer
+    const fileName = `Carbons.png`;
+    const filePath = path.join(__dirname, fileName);
+
+    fs.writeFileSync(filePath, imageData); // Write the buffer to a file
+
+    const botName = 'Zero-TWO';
+    const caption = `Made by ${botName}`;
+
+    res.sendFile(filePath, {
+      dotfiles: 'deny',
+      headers: {
+        'Content-Type': 'image/png', // Set appropriate Content-Type
+      }
+    }, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        if (err.code === 'ENOENT') {
+          res.status(404).send('File not found');
+        } else {
+          res.status(500).send('Internal server error');
+        }
+      } else {
+        console.log('File sent successfully');
+        fs.unlinkSync(filePath); // Delete the temporary file after sending
+      }
+    });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    return res.status(500).json({ error: "An error occurred while processing the request" });
+  }
+});
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
